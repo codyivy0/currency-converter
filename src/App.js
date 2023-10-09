@@ -6,10 +6,12 @@ export default function App() {
   const [from, setFrom] = useState("USD");
   const [to, setTo] = useState("EUR");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [rate, setRate] = useState("");
 
   useEffect(() => {
     async function fetchRate() {
+      setIsLoading(true);
       try {
         setError("");
         const res = await fetch(
@@ -19,10 +21,11 @@ export default function App() {
           throw new Error("Something went wrong fetching");
         }
         const data = await res.json();
-        
         setRate(data.rates[to]);
+        setIsLoading(false);
       } catch (err) {
         setError(err.message || "An error occurred");
+        setIsLoading(false);
       }
     }
     fetchRate();
@@ -30,24 +33,40 @@ export default function App() {
 
   return (
     <div>
-      <Amount amount={amount} onHandleChange={setAmount} />
-      <Select currency={from} setCurrency={setFrom} />
-      <Select currency={to} setCurrency={setTo} />
-      {!error ? <Output rate={rate} to={to} /> : <Error error={error} />}
+      <Amount
+        amount={amount}
+        onHandleChange={setAmount}
+        isLoading={isLoading}
+      />
+      <Select currency={from} setCurrency={setFrom} isLoading={isLoading} />
+      <Select currency={to} setCurrency={setTo} isLoading={isLoading} />
+      {error && <Error error={error} />}
+      {isLoading && <p>Loading...</p>}
+      {!error && !isLoading && <Output rate={rate} to={to} />}
     </div>
   );
 }
 
-function Amount({ amount, onHandleChange }) {
+function Amount({ amount, onHandleChange, isLoading }) {
   function handleChange(e) {
     onHandleChange(e.target.value);
   }
-  return <input type="number" value={amount} onChange={handleChange} />;
+  return (
+    <input
+      type="number"
+      value={amount}
+      onChange={handleChange}
+    />
+  );
 }
 
-function Select({ currency, setCurrency }) {
+function Select({ currency, setCurrency, isLoading }) {
   return (
-    <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+    <select
+      value={currency}
+      onChange={(e) => setCurrency(e.target.value)}
+      disabled={isLoading}
+    >
       <option value="USD">USD</option>
       <option value="EUR">EUR</option>
       <option value="CAD">CAD</option>
